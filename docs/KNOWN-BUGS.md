@@ -40,6 +40,22 @@ effect skips the `searchQuery` rewrite. External selections still sync.
 Preserve the `lastSyncedDevice` guard — removing or reordering it
 reintroduces the bug.
 
+## T48 rejected at connect — firmware minimum used TL866II+ scale (fixed)
+
+`MiniproHandle::open` applied the TL866II+ minimum firmware (`0x255`,
+version 4.2.85) to the T48, but the T48 runs its own firmware line —
+latest `0x127` (01.1.39) — so every real T48 was refused with
+`FirmwareTooOld`. The original check shared one minimum across
+TL866II+/T48/T56/T76; T56 and T76 got their own constants later but T48
+was left grouped with TL866II+.
+
+**Fix:** `MIN_FIRMWARE_T48` in `protocol/t48.rs` is `0` (no hard floor),
+matching upstream C minipro, which compares firmware against a per-model
+*expected* version (`0x127` for T48) and only warns — it never refuses to
+connect. Do not reintroduce a nonzero T48 floor without verifying a real
+command-set dependency; firmware numbers are not comparable across models.
+TL866A/CS likewise has no enforced floor (`MIN_FIRMWARE_A` is unused).
+
 ## `do_write` called `erase_chip` before `begin_transaction`
 
 The handle had no active device, so the firmware returned "Protocol error:

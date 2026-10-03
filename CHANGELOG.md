@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **T48 rejected at connect with "firmware too old"** — the firmware minimum check grouped the T48 with the TL866II+ minimum (`0x255`), but the T48 runs its own firmware line (latest `0x127` / 01.1.39), so every released T48 firmware was refused. The T48 now has its own minimum (`0`, no hard floor), matching upstream C minipro which warns on version mismatch but never refuses to connect.
+
 ---
 
 ## [0.9.0] - 2026-09-25
