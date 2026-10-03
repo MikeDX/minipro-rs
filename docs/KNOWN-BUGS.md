@@ -56,6 +56,35 @@ connect. Do not reintroduce a nonzero T48 floor without verifying a real
 command-set dependency; firmware numbers are not comparable across models.
 TL866A/CS likewise has no enforced floor (`MIN_FIRMWARE_A` is unused).
 
+## `minipro -t` panic on T48 — hardware check used TL866II+ pin domain (fixed)
+
+`T48Protocol` was a plain re-export of `Tl866iiPlusProtocol`, so the
+hardware self-test ran with TL866II+ assumptions: byte-per-pin state reads
+(`read_buffer[7 + pin]` for pins 1..21) and TL866II+ pin tables. The T48
+returns ~16 bytes from READ_PINS with pin states **bit-packed** at
+`msg[8 + pin/8]`, so every VPP pin reported "Bad" and pin 9 panicked
+(`len is 16 but the index is 16`).
+
+**Fix:** `Tl866iiPlusProtocol` now carries an `is_t48` flag
+(`T48Protocol::new_t48()`); `hardware_check` branches to a port of
+upstream `t48_hardware_check` in `protocol/t48.rs` — T48 pin tables (17
+VPP / 34 VCC / 35 GND entries with byte offsets 8–16), `zif_pin_state`
+bit-unpacking, `zif_no_io` (unconnected ICSP pins 52/54/56), per-pin
+cross-short checks, logic drive tests at both levels, and the OVC tail.
+Note the pull-up/pull-down opcodes are **swapped** between models:
+T48 `0x31`=pull-ups/`0x32`=pull-downs vs TL866II+ `0x31`=pull-downs/
+`0x32`=pull-ups.
+
+**Divergence warning:** upstream dispatches T48-specific functions for
+nearly every operation (`t48_set_zif_direction/state`,
+`t48_get_zif_state`, `t48_set_pin_drivers`, `t48_set_voltages`,
+`t48_begin_transaction` SPI-clock fields at `msg[24]`/`msg[28]`, OVC trip
+level at `msg[0x34]`) and provides **no** `pin_test` for T48. The shared
+implementation remains in use for those paths — if T48 pin-contact tests
+(`-z`), SPI clock behaviour, or voltage overrides misbehave on real
+hardware, port the corresponding `t48.c` functions rather than assuming
+TL866II+ layout.
+
 ## `do_write` called `erase_chip` before `begin_transaction`
 
 The handle had no active device, so the firmware returned "Protocol error:

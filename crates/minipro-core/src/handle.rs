@@ -91,7 +91,7 @@ impl MiniproHandle {
 
         let protocol: Box<dyn Protocol> = match info.model {
             ProgrammerModel::Tl866a | ProgrammerModel::Tl866cs => Box::new(Tl866aProtocol::new()),
-            ProgrammerModel::T48 => Box::new(T48Protocol::new()),
+            ProgrammerModel::T48 => Box::new(T48Protocol::new_t48()),
             ProgrammerModel::T56 => Box::new(T56Protocol::new()),
             ProgrammerModel::T76 => Box::new(T76Protocol::new()),
             _ => Box::new(Tl866iiPlusProtocol::new()),
