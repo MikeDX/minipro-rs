@@ -46,16 +46,27 @@ impl MiniproHandle {
     /// Open the first connected programmer and read firmware info.
     pub fn open() -> Result<Self> {
         let (usb, initial_model) = open_programmer()?;
+        Self::from_usb(usb, initial_model, false)
+    }
 
-        // Query the firmware for the authoritative model/version.
-        // TL866A/CS uses a 40-byte response layout; all others use 41 bytes.
+    /// Build a session around an already opened USB device.
+    ///
+    /// `initial_model` selects the system-info layout before the firmware
+    /// reports the real model. TL866A/CS uses a 40-byte response; every other
+    /// model uses 41 bytes. The WebUSB build opens the device in the browser
+    /// and calls this instead of [`open`](Self::open).
+    pub fn from_usb(
+        usb: UsbDevice,
+        initial_model: ProgrammerModel,
+        allow_bootloader: bool,
+    ) -> Result<Self> {
         let sys_info = if initial_model == ProgrammerModel::Tl866a {
             tl866a::get_system_info(&usb)?
         } else {
             get_system_info(&usb)?
         };
 
-        if sys_info.status == ProgrammerStatus::Bootloader {
+        if !allow_bootloader && sys_info.status == ProgrammerStatus::Bootloader {
             return Err(MiniproError::BootloaderMode);
         }
 

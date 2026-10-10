@@ -280,14 +280,14 @@ fn find_algorithm_in_xml(
     name: &str,
     model: ProgrammerModel,
 ) -> Result<String, MiniproError> {
-    let file = std::fs::File::open(path).map_err(|e| {
+    let data = crate::vfs::read(path).map_err(|e| {
         MiniproError::Xml(format!(
             "Cannot open algorithm file '{}': {}",
             path.display(),
             e
         ))
     })?;
-    let mut reader = Reader::from_reader(std::io::BufReader::new(file));
+    let mut reader = Reader::from_reader(std::io::Cursor::new(data));
     reader.config_mut().trim_text(true);
 
     let section_tag = match model {
