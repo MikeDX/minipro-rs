@@ -113,7 +113,7 @@ pub fn read_file(path: &Path, format: &str, size: usize, blank_value: u8) -> Res
         "ihex" => ihex::read(path, size, blank_value),
         "srec" => srec::read(path, size, blank_value),
         "jedec" => jedec::read(path, size),
-        _ => Ok(std::fs::read(path)?),
+        _ => Ok(crate::vfs::read(path)?),
     }
 }
 
@@ -140,7 +140,7 @@ pub fn write_file(path: &Path, format: &str, data: &[u8], device_name: Option<&s
         "ihex" => ihex::write(path, data),
         "srec" => srec::write(path, data),
         "jedec" => jedec::write(path, data, device_name),
-        _ => Ok(std::fs::write(path, data)?),
+        _ => Ok(crate::vfs::write(path, data)?),
     }
 }
 

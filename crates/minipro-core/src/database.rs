@@ -9,7 +9,6 @@
 
 use std::{
     collections::HashMap,
-    io::Read,
     path::{Path, PathBuf},
 };
 
@@ -491,10 +490,13 @@ pub fn get_pin_map(infoic_path: &Path, index: u32) -> Result<Option<PinMap>> {
 // ── File-level search ────────────────────────────────────────────────────────
 
 fn read_file(path: &Path) -> Result<String> {
-    let mut f = std::fs::File::open(path)?;
-    let mut s = String::new();
-    f.read_to_string(&mut s)?;
-    Ok(s)
+    let bytes = crate::vfs::read(path)?;
+    String::from_utf8(bytes).map_err(|err| {
+        MiniproError::Xml(format!(
+            "database '{}' is not valid UTF-8: {err}",
+            path.display()
+        ))
+    })
 }
 
 /// Map a single-char token from a logicic.xml vector to its numeric state.

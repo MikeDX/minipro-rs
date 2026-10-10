@@ -2,8 +2,14 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum MiniproError {
+    /// Native builds store an `nusb` error, which is an `std::io::Error`.
+    /// WebAssembly has no `nusb`, so the same variant carries the message.
+    #[cfg(not(target_arch = "wasm32"))]
     #[error("USB error: {0}")]
     Usb(nusb::Error),
+    #[cfg(target_arch = "wasm32")]
+    #[error("USB error: {0}")]
+    Usb(String),
 
     #[error("No programmer found. If one is connected, this can happen after the computer wakes from sleep — unplug the programmer, wait 20-30 seconds, plug it back in, and try again. On Windows, if this is a new device, you may need to install the WinUSB driver with Zadig (https://zadig.akeo.ie/).")]
     NoProgrammerFound,
@@ -63,9 +69,17 @@ pub enum MiniproError {
 
 pub type Result<T> = std::result::Result<T, MiniproError>;
 
+#[cfg(not(target_arch = "wasm32"))]
 impl From<nusb::Error> for MiniproError {
     fn from(e: nusb::Error) -> Self {
         MiniproError::Usb(e)
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+impl From<std::io::Error> for MiniproError {
+    fn from(err: std::io::Error) -> Self {
+        MiniproError::Io(err)
     }
 }
 
